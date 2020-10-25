@@ -800,47 +800,116 @@ def test_debug_in(dut):
     yield harness.clear_pending(epaddr_out)
     yield harness.clear_pending(epaddr_in)
 
-    # Setup stage
-    dut._log.info("Setup")
-    yield harness.host_send_token_packet(PID.SETUP, addr, 0) # epaddr_out
-    yield harness.host_send_data_packet(PID.DATA0, setup_data)
-    yield harness.host_expect_ack()
+    for i in range(2):
+        # Setup stage
+        dut._log.info("Setup")
+        yield harness.host_send_token_packet(PID.SETUP, addr, 0) # epaddr_out
+        yield harness.host_send_data_packet(PID.DATA0, setup_data)
+        yield harness.host_expect_ack()
 
-    #for i in range(100):
-    #    yield RisingEdge(harness.dut.clk12) 
+        #for i in range(100):
+        #    yield RisingEdge(harness.dut.clk12) 
+
+        # Data stage
+        dut._log.info("Data")
+        yield harness.host_send_token_packet(PID.IN, addr, 0)
+        yield harness.host_expect_data_packet(PID.DATA1, [0x12, 0, 0, 0, 0x34, 0, 0, 0,
+                                                          0x56, 0, 0, 0, 0x78, 0, 0, 0,
+                                                          0, 0, 0, 0, 0, 0, 0, 0, 
+                                                          0, 0, 0, 0, 0, 0, 0, 0,
+                                                          0, 0, 0, 0, 0, 0, 0, 0,
+                                                          0, 0, 0, 0, 0, 0, 0, 0,
+                                                          0, 0, 0, 0, 0, 0, 0, 0,
+                                                          0, 0, 0, 0, 0, 0, 0, 0, ])
+        yield harness.host_send_ack()
+        yield harness.host_send_token_packet(PID.IN, addr, 0)
+        yield harness.host_expect_data_packet(PID.DATA0, [0x12, 0, 0, 0, 0x34, 0, 0, 0,
+                                                          0x56, 0, 0, 0, 0x78, 0, 0, 0,
+                                                          0, 0, 0, 0, 0, 0, 0, 0, 
+                                                          0, 0, 0, 0, 0, 0, 0, 0,
+                                                          0, 0, 0, 0, 0, 0, 0, 0,
+                                                          0, 0, 0, 0, 0, 0, 0, 0,
+                                                          0, 0, 0, 0, 0, 0, 0, 0,
+                                                          0, 0, 0, 0, 0, 0, 0, 0, ])
+        yield harness.host_send_ack()
+        yield harness.host_send_token_packet(PID.IN, addr, 0)
+        yield harness.host_expect_data_packet(PID.DATA1, [0x12, 0, 0, 0, 0x34, 0, 0, 0,])
+        yield harness.host_send_ack()
+
+        # Status stage
+        dut._log.info("Status")
+        yield harness.host_send_token_packet(PID.OUT, addr, 0) #epaddr_in
+        yield harness.host_send_data_packet(PID.DATA1, [])
+        yield harness.host_expect_ack()
+
+
+@cocotb.test()
+def test_debug_out(dut):
+    harness = get_harness(dut)
+    yield harness.reset()
+    yield harness.connect()
+
+    addr = 0
+    yield harness.write(harness.csrs['usb_address'], addr)
+    # The "scratch" register defaults to 0x12345678 at boot.
+    reg_addr = harness.csrs['ctrl_scratch']
+    dut._log.info("reg_addr {:08x}".format(reg_addr))
+    setup_data = [
+        0x43, 0x00, (reg_addr >> 0) & 0xff, (reg_addr >> 8) & 0xff,
+        (reg_addr >> 16) & 0xff, (reg_addr >> 24) & 0xff, 0x88, 0x00
+    ]
+    epaddr_in = EndpointType.epaddr(0, EndpointType.IN)
+    epaddr_out = EndpointType.epaddr(0, EndpointType.OUT)
+
+    yield harness.clear_pending(epaddr_out)
+    yield harness.clear_pending(epaddr_in)
     
-    # Data stage
-    dut._log.info("Data")
-    yield harness.host_send_token_packet(PID.IN, addr, 0)
-    yield harness.host_expect_data_packet(PID.DATA1, [0x12, 0, 0, 0, 0x34, 0, 0, 0,
-                                                      0x56, 0, 0, 0, 0x78, 0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0, 
-                                                      0, 0, 0, 0, 0, 0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0, ])
-    yield harness.host_send_ack()
-    yield harness.host_send_token_packet(PID.IN, addr, 0)
-    yield harness.host_expect_data_packet(PID.DATA0, [0x12, 0, 0, 0, 0x34, 0, 0, 0,
-                                                      0x56, 0, 0, 0, 0x78, 0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0, 
-                                                      0, 0, 0, 0, 0, 0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0, ])
-    yield harness.host_send_ack()
-    yield harness.host_send_token_packet(PID.IN, addr, 0)
-    yield harness.host_expect_data_packet(PID.DATA1, [0x12, 0, 0, 0, 0x34, 0, 0, 0,])
-    yield harness.host_send_ack()
+    for i in range(1):
+        # Setup stage
+        dut._log.info("Setup")
+        yield harness.host_send_token_packet(PID.SETUP, addr, 0)
+        yield harness.host_send_data_packet(PID.DATA0, setup_data)
+        yield harness.host_expect_ack()
 
-    # Status stage
-    dut._log.info("Status")
-    yield harness.host_send_token_packet(PID.OUT, addr, 0) #epaddr_in
-    yield harness.host_send_data_packet(PID.DATA1, [])
-    yield harness.host_expect_ack()
+        # Data stage
+        dut._log.info("Data")
+        #for i in range(500):
+        #    yield RisingEdge(harness.dut.clk12) 
+        dut._log.info("Data Delayed")
+        yield harness.host_send_token_packet(PID.OUT, addr, 0)
+        yield harness.host_send_data_packet(PID.DATA1, [0x12, 0, 0, 0, 0x34, 0, 0, 0,
+                                                        0x56, 0, 0, 0, 0x78, 0, 0, 0,
+                                                        0, 0, 0, 0, 0, 0, 0, 0, 
+                                                        0, 0, 0, 0, 0, 0, 0, 0,
+                                                        0, 0, 0, 0, 0, 0, 0, 0,
+                                                        0, 0, 0, 0, 0, 0, 0, 0,
+                                                        0, 0, 0, 0, 0, 0, 0, 0,
+                                                        0, 0, 0, 0, 0, 0, 0, 0, ])
+        yield harness.host_expect_ack()
 
+        yield harness.host_send_token_packet(PID.OUT, addr, 0)
+        yield harness.host_send_data_packet(PID.DATA0, [0x12, 0, 0, 0, 0x34, 0, 0, 0,
+                                                        0x56, 0, 0, 0, 0x78, 0, 0, 0,
+                                                        0, 0, 0, 0, 0, 0, 0, 0, 
+                                                        0, 0, 0, 0, 0, 0, 0, 0,
+                                                        0, 0, 0, 0, 0, 0, 0, 0,
+                                                        0, 0, 0, 0, 0, 0, 0, 0,
+                                                        0, 0, 0, 0, 0, 0, 0, 0,
+                                                        0, 0, 0, 0, 0, 0, 0, 0, ])
+        yield harness.host_expect_ack()
+
+        yield harness.host_send_token_packet(PID.OUT, addr, 0)
+        yield harness.host_send_data_packet(PID.DATA1, [0x12, 0, 0, 0, 0x34, 0, 0, 0, ])
+        yield harness.host_expect_ack()
+        
+        #for i in range(500):
+        #    yield RisingEdge(harness.dut.clk12) 
+        # Status stage
+        dut._log.info("Status")
+        yield harness.host_send_token_packet(PID.IN, addr, 0) #epaddr_in
+        yield harness.host_expect_data_packet(PID.DATA1, [])
+        yield harness.host_send_ack()
+        
 
 # @cocotb.test()
 # def test_debug_in_missing_ack(dut):
@@ -879,7 +948,7 @@ def test_debug_in(dut):
 
 
 @cocotb.test()
-def test_debug_out(dut):
+def test_debug_out_old(dut):
     harness = get_harness(dut)
     yield harness.reset()
     yield harness.connect()

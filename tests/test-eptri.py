@@ -864,7 +864,7 @@ def test_debug_out(dut):
     yield harness.clear_pending(epaddr_out)
     yield harness.clear_pending(epaddr_in)
     
-    for i in range(1):
+    for i in range(2):
         # Setup stage
         dut._log.info("Setup")
         yield harness.host_send_token_packet(PID.SETUP, addr, 0)
@@ -895,11 +895,11 @@ def test_debug_out(dut):
                                                         0, 0, 0, 0, 0, 0, 0, 0,
                                                         0, 0, 0, 0, 0, 0, 0, 0,
                                                         0, 0, 0, 0, 0, 0, 0, 0,
-                                                        0, 0, 0, 0, 0, 0, 0, 0, ])
+                                                        0, 0, 0, 0, 0x89, 0xab, 0xcd, 0xef, ])
         yield harness.host_expect_ack()
 
         yield harness.host_send_token_packet(PID.OUT, addr, 0)
-        yield harness.host_send_data_packet(PID.DATA1, [0x12, 0, 0, 0, 0x34, 0, 0, 0, ])
+        yield harness.host_send_data_packet(PID.DATA1, [0xab, 0, 0, 0, 0xcd, 0, 0, 0, ])
         yield harness.host_expect_ack()
         
         #for i in range(500):

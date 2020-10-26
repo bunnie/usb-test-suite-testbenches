@@ -170,12 +170,12 @@ class BaseSoC(SoCCore):
         self.comb += usb_pads.tx_en.eq(usb_iobuf.usb_tx_en)
         if usb_variant == 'eptri':
             self.submodules.usb = eptri.TriEndpointInterface(usb_iobuf,
-                                                             debug=True, cdc=True)
+                                                             debug=True, burst=True, cdc=True)
         elif usb_variant == 'epfifo':
             self.submodules.usb = epfifo.PerEndpointFifoInterface(usb_iobuf,
                                                                   debug=True)
         elif usb_variant == 'dummy':
-            self.submodules.usb = dummyusb.DummyUsb(usb_iobuf, debug=True)
+            self.submodules.usb = dummyusb.DummyUsb(usb_iobuf, debug=True, burst=True)
         else:
             raise ValueError(
                 'Invalid endpoints value. It is currently \'eptri\'\
